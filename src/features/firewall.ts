@@ -37,6 +37,8 @@ export class FireWallFeature extends SqlOpsFeature<any> {
 
 		let handleFirewallRule = (errorCode: number, errorMessage: string, connectionTypeId: string): Thenable<azdata.HandleFirewallRuleResponse> => {
 			let params: HandleFirewallRuleParams = { errorCode: errorCode, errorMessage: errorMessage, connectionTypeId: connectionTypeId };
+			//let response: azdata.HandleFirewallRuleResponse = {result: true, ipAddress: "10.11.12.132"};
+			//return Promise.resolve(123).then((val) => {return response;})
 			return client.sendRequest(HandleFirewallRuleRequest.type, params);
 		};
 
