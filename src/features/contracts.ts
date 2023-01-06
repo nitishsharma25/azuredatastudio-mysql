@@ -35,10 +35,6 @@ export interface CreateFirewallRuleParams {
 	 */
 	serverName: string;
 	/**
-	 * Firewall rule name to set
-	 */
-	firewallRuleName: string;
-	/**
 	 * Start of the IP address range
 	 */
 	startIpAddress: string;

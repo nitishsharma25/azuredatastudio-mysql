@@ -41,8 +41,8 @@ export class FireWallFeature extends SqlOpsFeature<any> {
 		};
 
 		return azdata.resources.registerResourceProvider({
-			displayName: 'Azure SQL Resource Provider', // TODO Localize
-			id: 'Microsoft.Azure.SQL.ResourceProvider',
+			displayName: 'Azure MySQL Resource Provider', // TODO Localize
+			id: 'Microsoft.Azure.MySQL.ResourceProvider',
 			settings: {
 
 			}
@@ -56,7 +56,6 @@ export class FireWallFeature extends SqlOpsFeature<any> {
 function asCreateFirewallRuleParams(account: azdata.Account, params: azdata.FirewallRuleInfo): CreateFirewallRuleParams {
     return {
         account: account,
-        firewallRuleName: params.firewallRuleName,
         serverName: params.serverName,
         startIpAddress: params.startIpAddress,
         endIpAddress: params.endIpAddress,
