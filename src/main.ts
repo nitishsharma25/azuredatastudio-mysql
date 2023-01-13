@@ -5,6 +5,7 @@
 'use strict';
 
 import * as vscode from 'vscode';
+import { l10n } from 'vscode';
 import * as path from 'path';
 import { SqlOpsDataClient, ClientOptions } from 'dataprotocol-client';
 import { IConfig, ServerProvider, Events } from '@microsoft/ads-service-downloader';
@@ -14,6 +15,7 @@ import * as Constants from './constants';
 import ContextProvider from './contextProvider';
 import * as Utils from './utils';
 import { Telemetry, LanguageClientErrorHandler } from './telemetry';
+import { constants } from 'buffer';
 
 const baseConfig = require('./config.json');
 const outputChannel = vscode.window.createOutputChannel(Constants.serviceName);
@@ -25,7 +27,8 @@ export async function activate(context: vscode.ExtensionContext) {
 	let supported = await Utils.verifyPlatform();
 
 	if (!supported) {
-		vscode.window.showErrorMessage('Unsupported platform');
+		const message = l10n.t('Unsupported Platform');
+		vscode.window.showErrorMessage(message);
 		return;
 	}
 
@@ -57,7 +60,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		const processStart = Date.now();
 		languageClient.onReady().then(() => {
 			const processEnd = Date.now();
-			statusView.text = Constants.providerId + ' service started';
+			statusView.text = l10n.t('{providerId} service started', { providerId: Constants.providerId });
 			setTimeout(() => {
 				statusView.hide();
 			}, 1500);
@@ -69,11 +72,12 @@ export async function activate(context: vscode.ExtensionContext) {
 			});
 		});
 		statusView.show();
-		statusView.text = 'Starting ' + Constants.providerId +  ' service';
+		statusView.text = l10n.t('Starting {providerId} service', { providerId: Constants.providerId });
 		languageClient.start();
 	}, e => {
 		Telemetry.sendTelemetryEvent('ServiceInitializingFailed');
-		vscode.window.showErrorMessage('Failed to start ' + Constants.providerId + ' tools service');
+		const errorMessage = l10n.t('Failed to start {providerId} tools service', { providerId: Constants.providerId })
+		vscode.window.showErrorMessage(errorMessage);
 	});
 
 	let contextProvider = new ContextProvider();
@@ -128,16 +132,18 @@ function generateHandleServerProviderEvent() {
 		statusView.show();
 		switch (e) {
 			case Events.INSTALL_START:
-				outputChannel.appendLine(`Installing ${Constants.serviceName} to ${args[0]}`);
-				statusView.text = 'Installing Service';
+				const outputChannelMessage = l10n.t('Installing {serviceName} to {place}', {serviceName: Constants.serviceName, place: args[0]})
+				outputChannel.appendLine(outputChannelMessage);
+				statusView.text = l10n.t('Installing Service');
 				break;
 			case Events.INSTALL_END:
-				outputChannel.appendLine('Installed');
+				const installedMessage = l10n.t('Installed');
+				outputChannel.appendLine(installedMessage);
 				break;
 			case Events.DOWNLOAD_START:
-				outputChannel.appendLine(`Downloading ${args[0]}`);
-				outputChannel.append(`(${Math.ceil(args[1] / 1024)} KB)`);
-				statusView.text = 'Downloading Service';
+				outputChannel.appendLine(l10n.t(`Downloading ${args[0]}}`, {name: args[0]}));
+				outputChannel.append(l10n.t('{size} KB', {size: Math.ceil(args[1] / 1024)}));
+				statusView.text = l10n.t('Downloading Service');
 				break;
 			case Events.DOWNLOAD_PROGRESS:
 				let newDots = Math.ceil(args[0] / 5);
@@ -147,7 +153,7 @@ function generateHandleServerProviderEvent() {
 				}
 				break;
 			case Events.DOWNLOAD_END:
-				outputChannel.appendLine('Done!');
+				outputChannel.appendLine(l10n.t('Done!'));
 				break;
 		}
 	};

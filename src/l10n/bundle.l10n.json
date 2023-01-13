@@ -1,0 +1,12 @@
+{
+  "Unsupported Platform": "Unsupported Platform",
+  "{providerId} service started": "{providerId} service started",
+  "Starting {providerId} service": "Starting {providerId} service",
+  "Failed to start {providerId} tools service": "Failed to start {providerId} tools service",
+  "Installing {serviceName} to {place}": "Installing {serviceName} to {place}",
+  "Installing Service": "Installing Service",
+  "Installed": "Installed",
+  "{size} KB": "{size} KB",
+  "Downloading Service": "Downloading Service",
+  "Done!": "Done!"
+}
