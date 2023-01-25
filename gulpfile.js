@@ -10,12 +10,12 @@ var config = require('./tasks/config');
 var cproc = require('child_process');
 var nls = require('vscode-nls-dev');
 const path = require('path');
-
+const es = require('event-stream');
 require('./tasks/packagetasks')
 
 const languages = [
-    { id: 'zh-tw', folderName: 'cht', transifexId: 'zh-hant' },
-    { id: 'zh-cn', folderName: 'chs', transifexId: 'zh-hans' },
+    { id: 'zh-Hant', folderName: 'cht', transifexId: 'zh-hant' },
+    { id: 'zh-Hans', folderName: 'chs', transifexId: 'zh-hans' },
     { id: 'ja', folderName: 'jpn' },
     { id: 'ko', folderName: 'kor' },
     { id: 'de', folderName: 'deu' },
@@ -25,10 +25,8 @@ const languages = [
     { id: 'it', folderName: 'ita' },
 
     // These language-pack languages are included for VS but excluded from the vscode package
-    { id: 'cs', folderName: 'csy' },
     { id: 'tr', folderName: 'trk' },
-    { id: 'pt-br', folderName: 'ptb', transifexId: 'pt-BR' },
-    { id: 'pl', folderName: 'plk' }
+    { id: 'pt-BR', folderName: 'ptb', transifexId: 'pt-BR' },
 ];
 
 const cleanTask = function() {
@@ -50,10 +48,32 @@ gulp.task('ext:lint', () => {
 
 const addI18nTask = function() {
 	return gulp.src(['package.nls.json'])
+        .pipe(nls.createAdditionalLanguageFiles(languages, 'i18n'))
 		.pipe(gulp.dest('.'));
 };
 
 gulp.task('ext:compile-src', (done) => {
+    return gulp.src([
+                config.paths.project.root + '/src/**/*.ts',
+                config.paths.project.root + '/src/**/*.js'])
+                .pipe(srcmap.init())
+                .pipe(tsProject())
+                .on('error', function() {
+                    if (process.env.BUILDMACHINE) {
+                        done('Extension Tests failed to build. See Above.');
+                        process.exit(1);
+                    }
+                })
+                .pipe(nls.rewriteLocalizeCalls())
+                .pipe(nls.createAdditionalLanguageFiles(languages, 'i18n', 'out'))
+                .pipe(srcmap.write('.', {
+                   sourceRoot: function(file){ return file.cwd + '/src'; }
+                }))
+                .pipe(gulp.dest('out/'));
+});
+
+// generate metadata containing all localized files in src directory, to be used later by exporti18n task to create an xlf file.
+gulp.task('generate-metadata', (done) => {
     return gulp.src([
                 config.paths.project.root + '/src/**/*.ts',
                 config.paths.project.root + '/src/**/*.js'])
@@ -74,11 +94,21 @@ gulp.task('ext:compile-src', (done) => {
                 .pipe(gulp.dest('out/'));
 });
 
+// Creates an xlf file containing all the localized strings. This file is picked by translation pipeline.
 const exporti18n = function() {
 	return gulp.src(['package.nls.json', 'out/nls.metadata.header.json', 'out/nls.metadata.json'])
 			.pipe(nls.createXlfFiles("l10n", "l10n-sample"))
 			.pipe(gulp.dest(path.join('src')));
 };
+
+// Use the returned xlf files for all languages and fill i18n dir with respective lang files in respective lang dir.
+const importi18n = function() {
+    return Promise.resolve(es.merge(languages.map(language => {
+        return gulp.src(`src/l10n/transXlf/l10n-sample.${language.id}.xlf`, { allowEmpty: true })
+                .pipe(nls.prepareJsonFiles())
+                .pipe(gulp.dest(path.join('./i18n', language.folderName)));
+    })));
+}
 
 gulp.task('ext:compile-tests', (done) => {
     return gulp.src([
@@ -99,7 +129,11 @@ gulp.task('ext:compile-tests', (done) => {
 
 });
 
-gulp.task('ext:compile', gulp.series(cleanTask, 'ext:compile-src', addI18nTask, exporti18n, 'ext:compile-tests'));
+gulp.task('ext:localize', gulp.series('generate-metadata', exporti18n));
+
+gulp.task('ext:import', importi18n);
+
+gulp.task('ext:compile', gulp.series(cleanTask, 'ext:compile-src', addI18nTask, 'ext:compile-tests'));
 
 gulp.task('ext:copy-tests', () => {
     return gulp.src(config.paths.project.root + '/test/resources/**/*')
